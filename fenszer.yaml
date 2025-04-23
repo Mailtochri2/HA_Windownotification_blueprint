@@ -1,0 +1,143 @@
+blueprint:
+  name: Fenster Automatisierung mit Temperaturdifferenz
+  description: "Deaktiviert Heizungen bei geöffnetem Fenster im Kinderzimmer und gibt eine Warnung, wenn Temperaturdifferenz zwischen innen und außen max. 3 Grad beträgt."
+  domain: automation
+  input:
+    window_sensor:
+      name: Fenstersensor
+      selector:
+        entity:
+          domain: binary_sensor
+    window_check_sensor:
+      name: Fensterstatus-Sensor zur Prüfung nach 10 Minuten
+      selector:
+        entity:
+          domain: binary_sensor
+    temp_inside:
+      name: Innentemperatur Sensor
+      selector:
+        entity:
+          domain: sensor
+    temp_outside:
+      name: Außentemperatur Sensor
+      selector:
+        entity:
+          domain: sensor
+    heater_1:
+      name: Heizung 1
+      selector:
+        entity:
+          domain: climate
+    heater_2:
+      name: Heizung 2
+      selector:
+        entity:
+          domain: climate
+    internet_switch:
+      name: Internetschalter (visuelles Signal)
+      selector:
+        entity:
+          domain: switch
+    dnd_boolean:
+      name: Nicht-Stören Schalter
+      selector:
+        entity:
+          domain: input_boolean
+    media_kuche:
+      name: Media Player Küche
+      selector:
+        entity:
+          domain: media_player
+    media_esszimmer:
+      name: Media Player Esszimmer
+      selector:
+        entity:
+          domain: media_player
+    media_bad:
+      name: Media Player Bad
+      selector:
+        entity:
+          domain: media_player
+
+automation:
+  alias: Fenster Automatisierung (Blueprint)
+  trigger:
+    - platform: state
+      entity_id: !input window_sensor
+      to: 'on'
+      for: '00:00:10'
+      id: window_open
+    - platform: state
+      entity_id: !input window_sensor
+      to: 'off'
+      for: '00:00:10'
+      id: window_close
+  condition:
+    - condition: template
+      value_template: >
+        {% set inside = states('!input temp_inside') | float(0) %}
+        {% set outside = states('!input temp_outside') | float(0) %}
+        {{ (inside - outside) | abs <= 3 }}
+  action:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: window_open
+          sequence:
+            - service: climate.set_hvac_mode
+              target:
+                entity_id: !input heater_1
+              data:
+                hvac_mode: 'off'
+            - service: climate.set_hvac_mode
+              target:
+                entity_id: !input heater_2
+              data:
+                hvac_mode: 'off'
+            - delay: '00:10:00'
+            - condition: state
+              entity_id: !input window_check_sensor
+              state: 'on'
+            - condition: state
+              entity_id: !input dnd_boolean
+              state: 'off'
+            - service: switch.turn_on
+              target:
+                entity_id: !input internet_switch
+            - delay: '00:00:30'
+            - service: tts.google_translate_say
+              data:
+                entity_id: !input media_kuche
+                message: Fenster Kinderzimmer schließen
+                language: de
+            - delay: '00:00:05'
+            - service: tts.google_translate_say
+              data:
+                entity_id: !input media_esszimmer
+                message: Fenster Kinderzimmer schließen
+                language: de
+            - delay: '00:00:05'
+            - service: tts.google_translate_say
+              data:
+                entity_id: !input media_bad
+                message: Fenster Kinderzimmer schließen
+                language: de
+            - delay: '00:00:30'
+            - service: switch.turn_off
+              target:
+                entity_id: !input internet_switch
+        - conditions:
+            - condition: trigger
+              id: window_close
+          sequence:
+            - delay: '00:30:00'
+            - service: climate.set_hvac_mode
+              target:
+                entity_id: !input heater_1
+              data:
+                hvac_mode: heat
+            - service: climate.set_hvac_mode
+              target:
+                entity_id: !input heater_2
+              data:
+                hvac_mode: heat
