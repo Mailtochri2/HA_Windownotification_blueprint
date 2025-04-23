@@ -1,0 +1,21 @@
+blueprint:
+  name: Allereinfachster Blueprint
+  description: "Schaltet eine Lampe beim Auslösen eines Triggers ein."
+  domain: automation
+  input:
+    light_target:
+      name: Ziel-Licht
+      selector:
+        entity:
+          domain: light
+
+trigger:
+  - platform: time
+    at: "07:00:00"
+
+action:
+  - service: light.turn_on
+    target:
+      entity_id: !input light_target
+
+mode: single
