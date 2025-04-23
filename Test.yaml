@@ -1,8 +1,12 @@
 blueprint:
   name: Allereinfachster Blueprint
-  description: "Schaltet eine Lampe beim Auslösen eines Triggers ein."
+  description: "Schaltet eine Lampe zur angegebenen Uhrzeit ein."
   domain: automation
   input:
+    trigger_time:
+      name: Uhrzeit
+      selector:
+        time: {}
     light_target:
       name: Ziel-Licht
       selector:
@@ -11,7 +15,7 @@ blueprint:
 
 trigger:
   - platform: time
-    at: "07:00:00"
+    at: !input trigger_time
 
 action:
   - service: light.turn_on
