@@ -73,11 +73,11 @@ automation:
       for: '00:00:10'
       id: window_close
   condition:
-    - condition: template
-      value_template: >
-        {% set inside = states('!input temp_inside') | float(0) %}
-        {% set outside = states('!input temp_outside') | float(0) %}
-        {{ (inside - outside) | abs <= 3 }}
+  - condition: template
+    value_template: >
+      {% set inside = states[inputs.temp_inside] | float(0) %}
+      {% set outside = states[inputs.temp_outside] | float(0) %}
+      {{ (inside - outside) | abs <= 3 }}
   action:
     - choose:
         - conditions:
